@@ -1,17 +1,13 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, ButtonModule],
-  template: `
-    <div style="padding:24px">
-      <h1>It works 🎉</h1>
-      <p>This is the HomeComponent.</p>
-      <p-button label="Just a test button"></p-button>
-    </div>
-  `
+  imports: [CommonModule, RouterModule, ButtonModule],
+  templateUrl: './home.html',
+  styleUrls: ['./home.scss']
 })
 export class HomeComponent {}

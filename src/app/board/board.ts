@@ -1,11 +1,10 @@
 import {
-  Component, ElementRef, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild,
-  CUSTOM_ELEMENTS_SCHEMA                               // ⬅️ add this
+  Component, ElementRef, EventEmitter, Input, Output, ViewChild, CUSTOM_ELEMENTS_SCHEMA
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-// Register the custom element (side-effect import)
-import 'chessboard-element';                             // ⬅️ IMPORTANT
+// Register the custom web component
+import 'chessboard-element';
 
 @Component({
   selector: 'app-board',
@@ -21,36 +20,30 @@ import 'chessboard-element';                             // ⬅️ IMPORTANT
       (drop)="onDrop($event)">
     </chess-board>
   `,
-  schemas: [CUSTOM_ELEMENTS_SCHEMA]                      // ⬅️ tell Angular “this is a custom element”
+  schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
-export class BoardComponent implements OnChanges {
+export class BoardComponent {
   @ViewChild('cb', { static: true }) cbEl!: ElementRef<any>;
+
   @Input() fen: string | null = 'start';
   @Input() orientation: 'white' | 'black' = 'white';
+
   @Output() move = new EventEmitter<{ from: string; to: string }>();
 
-  ngOnChanges(changes: SimpleChanges): void {
-    const el = this.cbEl?.nativeElement;
-    if (!el) return;
-    if (changes['fen'] && this.fen) el.position = this.fen;
-    if (changes['orientation'] && this.orientation) el.orientation = this.orientation;
-  }
-
   onDrop(ev: Event) {
-  const detail = (ev as CustomEvent<any>).detail;
-  if (!detail) return;
+    const detail = (ev as CustomEvent<any>).detail;
+    if (!detail) return;
+    const { source: from, target: to, setAction } = detail;
 
-  const { source: from, target: to, setAction } = detail;
+    // Ignore same-square drag
+    if (from === to) {
+      if (setAction) setAction('snapback');
+      return;
+    }
 
-  // Ignore no-op drops like d2→d2
-  if (from === to) {
+    this.move.emit({ from, to });
+
+    // Server is source of truth
     if (setAction) setAction('snapback');
-    return;
   }
-
-  this.move.emit({ from, to });
-
-  // Let the server be the source of truth
-  if (setAction) setAction('snapback');
-}
 }

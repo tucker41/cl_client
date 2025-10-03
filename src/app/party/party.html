@@ -1,1 +1,94 @@
-<p-button label="Join / Create" icon="pi pi-users" (onClick)="join()"></p-button>
+<p-toast></p-toast>
+
+<div class="page">
+  <div class="top">
+    <div class="brand">♟ Blitz Panda</div>
+    <span class="spacer"></span>
+    <p-tag *ngIf="chessTurn" severity="info" [value]="'Move: ' + (chessTurn === 'w' ? 'White' : 'Black')"></p-tag>
+    <p-button label="Home" icon="pi pi-home" class="ml-8" (onClick)="goHome()"></p-button>
+  </div>
+
+  <p-card class="controls">
+    <div class="row">
+      <label>Party <input pInputText [(ngModel)]="partyId" /></label>
+      <label>User <input pInputText [(ngModel)]="userId" /></label>
+      <label>Base <input pInputText type="number" [(ngModel)]="baseMin" min="1" /></label>
+      <label>Inc <input pInputText type="number" [(ngModel)]="incSec" min="0" /></label>
+
+      <p-button
+        [label]="joining ? 'Joining…' : 'Join / Create'"
+        icon="pi pi-users"
+        [loading]="joining"
+        (onClick)="join()">
+      </p-button>
+
+      <p-button
+        label="Resign"
+        icon="pi pi-flag"
+        severity="danger"
+        (onClick)="resign()">
+      </p-button>
+    </div>
+    <div class="status">{{ status }}</div>
+  </p-card>
+
+  <div class="board-area">
+    <p-card class="left">
+      <!-- TOP player relative to THIS viewer -->
+      <div class="player">
+        <div class="name">{{ topName() }}</div>
+        <div class="clock" [class.active]="activeSide===topSide()">
+          {{ ms(timeMs[topSide()]) }}
+        </div>
+      </div>
+
+      <p-progressBar
+        [value]="pct(timeMs[topSide()], baseMin)"
+        [showValue]="false"
+        [style]="{ width: '100%', height: '6px' }">
+      </p-progressBar>
+
+      <!-- Board with right-hand "Tap Clock" -->
+      <div class="board-with-right">
+        <div class="board-fader" [class.visible]="fen">
+          <app-board
+            [fen]="fen || 'start'"
+            [orientation]="orientation"
+            (move)="onBoardMove($event)">
+          </app-board>
+        </div>
+
+        <div class="clock-rail">
+          <p-button
+            label="Tap Clock"
+            icon="pi pi-stopwatch"
+            (onClick)="sock.emit('clock:press', { partyId, userId })">
+          </p-button>
+        </div>
+      </div>
+
+      <p-progressBar
+        [value]="pct(timeMs[bottomSide()], baseMin)"
+        [showValue]="false"
+        [style]="{ width: '100%', height: '6px', marginTop: '10px' }">
+      </p-progressBar>
+
+      <!-- BOTTOM player relative to THIS viewer -->
+      <div class="player">
+        <div class="name">{{ bottomName() }}</div>
+        <div class="clock" [class.active]="activeSide===bottomSide()">
+          {{ ms(timeMs[bottomSide()]) }}
+        </div>
+      </div>
+    </p-card>
+
+    <p-card class="right">
+      <h3>Game</h3>
+      <p><b>You are:</b> {{ userId === whiteId ? 'White' : (userId === blackId ? 'Black' : '—') }}</p>
+      <p><b>FEN:</b> <code>{{ fen || 'start' }}</code></p>
+      <p class="muted">Open a second tab with a different User ID to start.</p>
+      <p-divider></p-divider>
+      <p class="muted" *ngIf="!inGame">Waiting to start a game…</p>
+    </p-card>
+  </div>
+</div>

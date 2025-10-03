@@ -1,6 +1,10 @@
-.hero { min-height: 80vh; display: grid; place-items: center; padding: 24px; }
-.home-card { text-align: center; padding: 12px; }
-.title { margin: 0 0 8px; font-size: 2rem; }
-.subtitle { margin: 0 0 20px; color: var(--text-color-secondary); }
-.fade-in { animation: fade .45s ease-out both; }
-@keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.home {
+  text-align: center;
+  margin-top: 80px;
+}
+.actions {
+  margin-top: 30px;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}

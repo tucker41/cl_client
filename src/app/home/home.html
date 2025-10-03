@@ -1,7 +1,9 @@
-<div class="hero fade-in">
-  <p-card class="home-card">
-    <h1 class="title">♟ Blitz Panda</h1>
-    <p class="subtitle">Fast, clean, real-time chess with friends.</p>
-    <button pButton label="Play Now" icon="pi pi-play" (click)="goPlay()"></button>
-  </p-card>
+<div class="home">
+  <h1>♟ Blitz Panda</h1>
+  <p>Welcome to your modern real-time chess app.</p>
+
+  <div class="actions">
+    <p-button label="Play Now" icon="pi pi-play" routerLink="/modes"></p-button>
+    <p-button label="Party Match" icon="pi pi-users" severity="secondary" routerLink="/party"></p-button>
+  </div>
 </div>

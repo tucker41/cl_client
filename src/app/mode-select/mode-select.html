@@ -1,46 +1,15 @@
-<div class="wrap fade-in">
-  <div class="grid">
-    <p-card header="Game Speed" class="card">
-      <p-selectButton
-        [options]="speedOptions"
-        [(ngModel)]="speed"
-        (onChange)="onSpeedChange()">
-      </p-selectButton>
+<div class="wrap">
+  <p-card header="Choose Game Mode">
+    <div class="options">
+      <p-button label="Blitz (3|2)" (onClick)="selectMode(3, 2)"></p-button>
+      <p-button label="Rapid (10|5)" (onClick)="selectMode(10, 5)"></p-button>
+      <p-button label="Bullet (1|0)" (onClick)="selectMode(1, 0)"></p-button>
+    </div>
 
-      <p-divider></p-divider>
+    <p-divider></p-divider>
 
-      <div class="presets">
-        <button pButton label="1|0" (click)="speed='bullet'; baseMin=1; incSec=0"></button>
-        <button pButton label="2|1" (click)="speed='bullet'; baseMin=2; incSec=1"></button>
-        <button pButton label="3|2" (click)="speed='blitz';  baseMin=3; incSec=2"></button>
-        <button pButton label="5|0" (click)="speed='blitz';  baseMin=5; incSec=0"></button>
-        <button pButton label="10|0" (click)="speed='rapid'; baseMin=10; incSec=0"></button>
-        <button pButton label="15|10" (click)="speed='rapid'; baseMin=15; incSec=10"></button>
-      </div>
-    </p-card>
-
-    <p-card header="Options" class="card">
-      <div class="row">
-        <label>Base (min)</label>
-        <input pInputText type="number" [(ngModel)]="baseMin" min="1" />
-      </div>
-
-      <div class="row">
-        <label>Increment (sec)</label>
-        <input pInputText type="number" [(ngModel)]="incSec" min="0" />
-      </div>
-
-      <div class="row split">
-        <label>Open match</label>
-        <p-toggleButton [(ngModel)]="openMatch" onLabel="Open" offLabel="Private"></p-toggleButton>
-      </div>
-
-      <div class="row" *ngIf="!openMatch">
-        <label>Private party ID</label>
-        <input pInputText [(ngModel)]="partyId" placeholder="e.g. panda-cave-42" />
-      </div>
-
-      <button pButton label="Continue" icon="pi pi-arrow-right" (click)="start()" class="cta"></button>
-    </p-card>
-  </div>
+    <div class="desc">
+      Prefer a private party? You can configure it on the next screen.
+    </div>
+  </p-card>
 </div>

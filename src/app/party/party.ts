@@ -1,51 +1,76 @@
 import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { InputTextModule } from 'primeng/inputtext';
-import { InputNumberModule } from 'primeng/inputnumber';
+import { DividerModule } from 'primeng/divider';
+import { ToastModule } from 'primeng/toast';
+import { ProgressBarModule } from 'primeng/progressbar';
+import { MessageService } from 'primeng/api';
 
-import { SocketService } from '../services/socket.service';
 import { BoardComponent } from '../board/board';
+import { SocketService } from '../services/socket.service';
+
+type Side = 'w' | 'b';
 
 @Component({
   selector: 'app-party',
   standalone: true,
   imports: [
     CommonModule, FormsModule,
-    CardModule, ButtonModule, TagModule, InputTextModule, InputNumberModule,
+    CardModule, ButtonModule, TagModule, InputTextModule, DividerModule,
+    ToastModule, ProgressBarModule,
     BoardComponent
   ],
+  providers: [MessageService],
   templateUrl: './party.html',
   styleUrls: ['./party.scss']
 })
 export class PartyComponent implements OnDestroy {
-  // controls
+  // Controls
   partyId = 'demo-room';
   userId  = 'player-1';
   baseMin = 3;
   incSec  = 2;
 
-  // server state
+  // Game state
   status = 'Create or join a party';
-  fen = 'start';
+  fen: string | null = 'start';
   timeMs: { w: number; b: number } = { w: 0, b: 0 };
-  turn: 'w' | 'b' | undefined;
+  activeSide: Side | undefined;  // whose CLOCK runs
+  chessTurn: Side | undefined;   // who may MOVE
 
-  // players/orientation
   whiteId = '';
   blackId = '';
   orientation: 'white' | 'black' = 'white';
 
-  // ticking
+  joining = false;
+  inGame  = false;
+
   private lastSync: { w: number; b: number } = { w: 0, b: 0 };
   private tickHandle: any;
 
-  constructor(private sock: SocketService) {
+  constructor(
+    public sock: SocketService,                 // public so template can access (or add wrapper)
+    private route: ActivatedRoute,
+    private router: Router,
+    private messages: MessageService
+  ) {
+    // presets from query params
+    this.route.queryParamMap.subscribe(q => {
+      const base = Number(q.get('baseMin') ?? this.baseMin);
+      const inc  = Number(q.get('incSec') ?? this.incSec);
+      const party = q.get('party') || this.partyId;
+      if (q.keys.length) {
+        this.baseMin = base; this.incSec = inc; this.partyId = party;
+      }
+    });
+
+    // Socket events
     this.sock.on('party:update', (p: any) => {
       this.status = p.status === 'waiting' ? 'Waiting for opponent…' : `Party: ${p.status}`;
     });
@@ -57,39 +82,68 @@ export class PartyComponent implements OnDestroy {
 
       this.status = 'Game started';
       this.fen = g.fen || 'start';
-      this.timeMs = { w: g.baseMs, b: g.baseMs };
-      this.turn = 'w';
+      // server sends view-adjusted timeMs; use as baseline
+      this.timeMs = g.timeMs ?? { w: g.baseMs, b: g.baseMs };
+      this.activeSide = g.activeSide as Side;
+      this.chessTurn  = g.chessTurn  as Side;
+      this.inGame = true;
+
+      this.messages.add({ severity: 'success', summary: 'Game', detail: 'Game started!' });
       this.startTick();
     });
 
     this.sock.on('move:applied', (m: any) => {
+      // server sends view-adjusted timeMs; do not "snap back"
       this.fen = m.fen;
       this.timeMs = m.timeMs;
-      this.turn = m.turn;
+      this.chessTurn = m.chessTurn as Side;
+      // activeSide unchanged; no need to restart tick (but harmless)
+      this.startTick();
+    });
+
+    this.sock.on('clock:update', (c: any) => {
+      // after tap-clock, server sends adjusted times and new active side
+      this.timeMs = c.timeMs;
+      this.activeSide = c.activeSide as Side;
+      this.chessTurn  = c.chessTurn  as Side;
       this.startTick();
     });
 
     this.sock.on('game:over', (r: any) => {
       this.status = `Game over: ${r.result} (${r.endReason})`;
+      this.inGame = false;
       this.stopTick();
+      this.messages.add({ severity: 'info', summary: 'Game Over', detail: `${r.result} · ${r.endReason}` });
+    });
+
+    this.sock.on('error', (e: any) => {
+      this.messages.add({ severity: 'warn', summary: 'Server', detail: String(e) });
     });
   }
 
   ngOnDestroy(): void { this.stopTick(); }
 
+  // UI actions
+  goHome() { this.router.navigate(['/']); }
+
   join() {
+    this.joining = true;
     this.sock.emit('party:join', {
       partyId: this.partyId,
       userId: this.userId,
       baseMin: this.baseMin,
       incSec: this.incSec
     });
+    setTimeout(() => (this.joining = false), 300);
   }
 
-  // From BoardComponent
+  resign() {
+    this.sock.emit('resign', { partyId: this.partyId, userId: this.userId });
+  }
+
   onBoardMove(evt: { from: string; to: string }) {
-    const myColor = (this.userId === this.whiteId) ? 'w' : 'b';
-    if (this.turn && myColor !== this.turn) return; // optional guard
+    const myColor: Side = (this.userId === this.whiteId) ? 'w' : 'b';
+    if (this.chessTurn && myColor !== this.chessTurn) return; // only side to move
     this.sock.emit('move:submit', {
       partyId: this.partyId,
       userId: this.userId,
@@ -98,28 +152,37 @@ export class PartyComponent implements OnDestroy {
     });
   }
 
-  resign() {
-    this.sock.emit('resign', { partyId: this.partyId, userId: this.userId });
-  }
+  // orientation helpers: which side is top/bottom for THIS viewer
+  bottomName() { return this.orientation === 'white' ? 'White' : 'Black'; }
+  topName()    { return this.orientation === 'white' ? 'Black' : 'White'; }
+  bottomSide(): Side { return this.orientation === 'white' ? 'w' : 'b'; }
+  topSide(): Side    { return this.orientation === 'white' ? 'b' : 'w'; }
 
+  // ticking
   private startTick() {
     this.stopTick();
     this.lastSync = { ...this.timeMs };
     const start = Date.now();
+    const side = this.activeSide; // snapshot
     this.tickHandle = setInterval(() => {
       const elapsed = Date.now() - start;
-      const w = this.turn === 'w' ? Math.max(0, this.lastSync.w - elapsed) : this.lastSync.w;
-      const b = this.turn === 'b' ? Math.max(0, this.lastSync.b - elapsed) : this.lastSync.b;
+      const w = side === 'w' ? Math.max(0, this.lastSync.w - elapsed) : this.lastSync.w;
+      const b = side === 'b' ? Math.max(0, this.lastSync.b - elapsed) : this.lastSync.b;
       this.timeMs = { w, b };
     }, 200);
   }
   private stopTick() { if (this.tickHandle) { clearInterval(this.tickHandle); this.tickHandle = null; } }
 
+  // display helpers
   ms(ms?: number) {
     if (ms == null) return '—:—';
     const s = Math.max(0, Math.floor(ms/1000));
     const m = Math.floor(s/60);
     const r = s % 60;
     return `${m}:${r.toString().padStart(2,'0')}`;
+  }
+  pct(msLeft: number, baseMin: number) {
+    const total = baseMin * 60 * 1000;
+    return Math.max(0, Math.min(100, Math.round((msLeft / total) * 100)));
   }
 }
