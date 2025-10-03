@@ -1,13 +1,25 @@
 import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
+
+import { CardModule } from 'primeng/card';
+import { ButtonModule } from 'primeng/button';
+import { TagModule } from 'primeng/tag';
+import { InputTextModule } from 'primeng/inputtext';
+import { InputNumberModule } from 'primeng/inputnumber';
+
 import { SocketService } from '../services/socket.service';
 import { BoardComponent } from '../board/board';
 
 @Component({
   selector: 'app-party',
   standalone: true,
-  imports: [CommonModule, FormsModule, BoardComponent],
+  imports: [
+    CommonModule, FormsModule,
+    CardModule, ButtonModule, TagModule, InputTextModule, InputNumberModule,
+    BoardComponent
+  ],
   templateUrl: './party.html',
   styleUrls: ['./party.scss']
 })

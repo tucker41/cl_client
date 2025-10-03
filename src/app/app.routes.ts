@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
-import { PartyComponent } from './party/party';
+import { HomeComponent } from './home/home';
 
 export const routes: Routes = [
-  { path: '', component: PartyComponent },
+  { path: '', component: HomeComponent },
+  { path: '**', redirectTo: '' }
 ];
