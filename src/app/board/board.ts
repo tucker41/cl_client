@@ -3,7 +3,6 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-// Register the custom web component
 import 'chessboard-element';
 
 @Component({
@@ -43,7 +42,6 @@ export class BoardComponent {
 
     this.move.emit({ from, to });
 
-    // Server is source of truth
     if (setAction) setAction('snapback');
   }
 }
