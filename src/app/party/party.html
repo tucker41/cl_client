@@ -34,7 +34,6 @@
 
   <div class="board-area">
     <p-card class="left">
-      <!-- TOP player relative to THIS viewer -->
       <div class="player">
         <div class="name">{{ topName() }}</div>
         <div class="clock" [class.active]="activeSide===topSide()">
@@ -48,7 +47,6 @@
         [style]="{ width: '100%', height: '6px' }">
       </p-progressBar>
 
-      <!-- Board with right-hand "Tap Clock" -->
       <div class="board-with-right">
         <div class="board-fader" [class.visible]="fen">
           <app-board
@@ -73,7 +71,6 @@
         [style]="{ width: '100%', height: '6px', marginTop: '10px' }">
       </p-progressBar>
 
-      <!-- BOTTOM player relative to THIS viewer -->
       <div class="player">
         <div class="name">{{ bottomName() }}</div>
         <div class="clock" [class.active]="activeSide===bottomSide()">
